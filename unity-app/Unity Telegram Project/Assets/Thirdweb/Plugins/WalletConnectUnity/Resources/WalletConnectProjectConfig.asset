@@ -9,15 +9,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
+  m_Script: {fileID: 11500000, guid: b105f096d21e42cfac1c5f6ae49fe4ca, type: 3}
   m_Name: WalletConnectProjectConfig
   m_EditorClassIdentifier: 
-  <Id>k__BackingField: 
+  <Id>k__BackingField: 145769e410f16970a79ff77b2d89a1e0
   <Metadata>k__BackingField:
-    Name: 
-    Description: 
-    Url: 
-    Icons: []
+    Name: thirdweb
+    Description: thirdweb powered dApp
+    Url: https://thirdweb.com
+    Icons:
+    - https://thirdweb.com/favicon.ico
     Redirect:
       Native: 
       Universal: 

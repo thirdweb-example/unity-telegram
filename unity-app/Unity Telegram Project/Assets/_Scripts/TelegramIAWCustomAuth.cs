@@ -8,9 +8,6 @@ using UnityEngine.UI;
 public class TelegramIAWCustomAuth : MonoBehaviour
 {
     [field: SerializeField]
-    private string EncryptionKey;
-
-    [field: SerializeField]
     private Button WalletButton;
 
     [field: SerializeField]
@@ -34,7 +31,7 @@ public class TelegramIAWCustomAuth : MonoBehaviour
         var connection = new WalletOptions(
             provider: WalletProvider.InAppWallet,
             chainId: 421614,
-            inAppWalletOptions: new InAppWalletOptions(authprovider: AuthProvider.AuthEndpoint, jwtOrPayload: JsonConvert.SerializeObject(payload), encryptionKey: EncryptionKey),
+            inAppWalletOptions: new InAppWalletOptions(authprovider: AuthProvider.AuthEndpoint, jwtOrPayload: JsonConvert.SerializeObject(payload)),
             smartWalletOptions: new SmartWalletOptions(sponsorGas: true)
         );
         Log("Connecting wallet...");
@@ -51,7 +48,7 @@ public class TelegramIAWCustomAuth : MonoBehaviour
         }
         catch (System.Exception e)
         {
-            Log(e.Message);
+            Log(e.ToString());
         }
     }
 

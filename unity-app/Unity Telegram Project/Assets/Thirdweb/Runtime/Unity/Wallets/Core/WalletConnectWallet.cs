@@ -1,11 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Net.Http;
 using System.Numerics;
-using System.Text;
 using System.Threading.Tasks;
 using Nethereum.ABI.EIP712;
-using Newtonsoft.Json;
 using WalletConnectSharp.Sign.Models;
 using WalletConnectSharp.Sign.Models.Engine;
 using WalletConnectUnity.Core;
@@ -15,7 +12,6 @@ using WalletConnectUnity.Nethereum;
 using Nethereum.RPC.Eth.DTOs;
 using WalletConnectUnity.Core.Evm;
 using Nethereum.Hex.HexTypes;
-using UnityEngine;
 
 namespace Thirdweb.Unity
 {
@@ -63,6 +59,7 @@ namespace Thirdweb.Unity
             }
 
             CreateNewSession(eip155ChainsSupported);
+            WalletConnectModal.ModalClosed += OnModalClosed;
 
             while (!WalletConnect.Instance.IsConnected && _exception == null)
             {
@@ -71,20 +68,25 @@ namespace Thirdweb.Unity
 
             if (_exception != null)
             {
+                WalletConnectModal.ModalClosed -= OnModalClosed;
                 throw _exception;
             }
             else
             {
-                try
+                var currentChainId = WalletConnect.Instance.ActiveChainId;
+                if (currentChainId != $"eip155:{initialChainId}")
                 {
-                    var data = new WalletSwitchEthereumChain(new HexBigInteger(initialChainId).HexValue);
-                    await WalletConnect.Instance.RequestAsync<WalletSwitchEthereumChain, string>(data);
-                    await Task.Delay(5000); // wait for chain switch to take effect
-                    await WalletConnect.Instance.SignClient.AddressProvider.SetDefaultChainIdAsync($"eip155:{initialChainId}");
-                }
-                catch (Exception e)
-                {
-                    ThirdwebDebug.LogWarning($"Failed to ensure wallet is on active chain: {e.Message}");
+                    try
+                    {
+                        var data = new WalletSwitchEthereumChain(new HexBigInteger(initialChainId).HexValue);
+                        await WalletConnect.Instance.RequestAsync<WalletSwitchEthereumChain, string>(data);
+                        await Task.Delay(5000); // wait for chain switch to take effect
+                        await WalletConnect.Instance.SignClient.AddressProvider.SetDefaultChainIdAsync($"eip155:{initialChainId}");
+                    }
+                    catch (Exception e)
+                    {
+                        ThirdwebDebug.LogWarning($"Failed to ensure wallet is on active chain: {e.Message}");
+                    }
                 }
                 _walletConnectService = new WalletConnectServiceCore(WalletConnect.Instance.SignClient);
             }
@@ -92,8 +94,13 @@ namespace Thirdweb.Unity
             return new WalletConnectWallet(client);
         }
 
-        public async Task EnsureCorrectNetwork(BigInteger chainId)
+        public async Task SwitchNetwork(BigInteger chainId)
         {
+            var currentChainId = WalletConnect.Instance.ActiveChainId;
+            if (currentChainId == $"eip155:{chainId}")
+            {
+                return;
+            }
             var chainInfo = await Utils.GetChainMetadata(_client, chainId);
             var wcChainInfo = new EthereumChain()
             {
@@ -117,6 +124,12 @@ namespace Thirdweb.Unity
             await WalletConnect.Instance.RequestAsync<WalletSwitchEthereumChain, string>(data);
             await Task.Delay(5000); // wait for chain switch to take effect
             await WalletConnect.Instance.SignClient.AddressProvider.SetDefaultChainIdAsync($"eip155:{chainId}");
+        }
+
+        [Obsolete("Use SwitchNetwork instead.")]
+        public Task EnsureCorrectNetwork(BigInteger chainId)
+        {
+            return SwitchNetwork(chainId);
         }
 
         #region IThirdwebWallet
@@ -143,8 +156,8 @@ namespace Thirdweb.Unity
                 throw new ArgumentNullException(nameof(rawMessage), "Message to sign cannot be null.");
             }
 
-            var message = Encoding.UTF8.GetString(rawMessage);
-            return PersonalSign(message);
+            var hex = Utils.BytesToHex(rawMessage);
+            return PersonalSign(hex);
         }
 
         public async Task<string> PersonalSign(string message)
@@ -154,7 +167,7 @@ namespace Thirdweb.Unity
                 throw new ArgumentNullException(nameof(message), "Message to sign cannot be null.");
             }
 
-            var task = _walletConnectService.PersonalSignAsync(message);
+            var task = _walletConnectService.PersonalSignAsync(message.StartsWith("0x") ? message : message.StringToHex());
             SessionRequestDeeplink();
             return await task as string;
         }
@@ -248,6 +261,26 @@ namespace Thirdweb.Unity
             throw new NotImplementedException();
         }
 
+        public Task<List<LinkedAccount>> LinkAccount(
+            IThirdwebWallet walletToLink,
+            string otp = null,
+            bool? isMobile = null,
+            Action<string> browserOpenAction = null,
+            string mobileRedirectScheme = "thirdweb://",
+            IThirdwebBrowser browser = null,
+            BigInteger? chainId = null,
+            string jwt = null,
+            string payload = null
+        )
+        {
+            throw new InvalidOperationException("LinkAccount is not supported by external wallets.");
+        }
+
+        public Task<List<LinkedAccount>> GetLinkedAccounts()
+        {
+            throw new InvalidOperationException("GetLinkedAccounts is not supported by external wallets.");
+        }
+
         #endregion
 
         #region UI
@@ -270,13 +303,19 @@ namespace Thirdweb.Unity
                 };
 
                 var connectOptions = new ConnectOptions { OptionalNamespaces = optionalNamespaces, };
-
-                // Open modal
                 WalletConnectModal.Open(new WalletConnectModalOptions { ConnectOptions = connectOptions, IncludedWalletIds = _includedWalletIds });
             }
             catch (Exception e)
             {
                 _exception = e;
+            }
+        }
+
+        protected static void OnModalClosed(object sender, EventArgs e)
+        {
+            if (!WalletConnect.Instance.IsConnected)
+            {
+                _exception = new Exception("WalletConnect modal was closed.");
             }
         }
 

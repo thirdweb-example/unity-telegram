@@ -17,34 +17,26 @@ namespace Thirdweb.Unity
         EcosystemWallet
     }
 
-    public class InAppWalletOptions
+    public class InAppWalletOptions : EcosystemWalletOptions
     {
-        public string Email;
-        public string PhoneNumber;
-        public AuthProvider AuthProvider;
-        public string JwtOrPayload;
-        public string EncryptionKey;
-        public string StorageDirectoryPath;
-        public IThirdwebWallet SiweSigner;
-
         public InAppWalletOptions(
             string email = null,
             string phoneNumber = null,
             AuthProvider authprovider = AuthProvider.Default,
             string jwtOrPayload = null,
-            string encryptionKey = null,
+            string legacyEncryptionKey = null,
             string storageDirectoryPath = null,
             IThirdwebWallet siweSigner = null
         )
-        {
-            Email = email;
-            PhoneNumber = phoneNumber;
-            AuthProvider = authprovider;
-            JwtOrPayload = jwtOrPayload;
-            EncryptionKey = encryptionKey;
-            StorageDirectoryPath = storageDirectoryPath ?? Path.Combine(Application.persistentDataPath, "Thirdweb", "InAppWallet");
-            SiweSigner = siweSigner;
-        }
+            : base(
+                email: email,
+                phoneNumber: phoneNumber,
+                authprovider: authprovider,
+                jwtOrPayload: jwtOrPayload,
+                storageDirectoryPath: storageDirectoryPath,
+                siweSigner: siweSigner,
+                legacyEncryptionKey: legacyEncryptionKey
+            ) { }
     }
 
     public class EcosystemWalletOptions
@@ -57,6 +49,7 @@ namespace Thirdweb.Unity
         public string JwtOrPayload;
         public string StorageDirectoryPath;
         public IThirdwebWallet SiweSigner;
+        public string LegacyEncryptionKey;
 
         public EcosystemWalletOptions(
             string ecosystemId = null,
@@ -66,7 +59,8 @@ namespace Thirdweb.Unity
             AuthProvider authprovider = AuthProvider.Default,
             string jwtOrPayload = null,
             string storageDirectoryPath = null,
-            IThirdwebWallet siweSigner = null
+            IThirdwebWallet siweSigner = null,
+            string legacyEncryptionKey = null
         )
         {
             EcosystemId = ecosystemId;
@@ -77,6 +71,7 @@ namespace Thirdweb.Unity
             JwtOrPayload = jwtOrPayload;
             StorageDirectoryPath = storageDirectoryPath ?? Path.Combine(Application.persistentDataPath, "Thirdweb", "EcosystemWallet");
             SiweSigner = siweSigner;
+            LegacyEncryptionKey = legacyEncryptionKey;
         }
     }
 
@@ -164,7 +159,7 @@ namespace Thirdweb.Unity
 
         public static ThirdwebManager Instance { get; private set; }
 
-        public static readonly string THIRDWEB_UNITY_SDK_VERSION = "5.3.0";
+        public static readonly string THIRDWEB_UNITY_SDK_VERSION = "5.12.1";
 
         private bool _initialized;
 
@@ -299,7 +294,8 @@ namespace Thirdweb.Unity
                         phoneNumber: walletOptions.InAppWalletOptions.PhoneNumber,
                         authProvider: walletOptions.InAppWalletOptions.AuthProvider,
                         storageDirectoryPath: walletOptions.InAppWalletOptions.StorageDirectoryPath,
-                        siweSigner: walletOptions.InAppWalletOptions.SiweSigner
+                        siweSigner: walletOptions.InAppWalletOptions.SiweSigner,
+                        legacyEncryptionKey: walletOptions.InAppWalletOptions.LegacyEncryptionKey
                     );
                     break;
                 case WalletProvider.EcosystemWallet:
@@ -319,7 +315,8 @@ namespace Thirdweb.Unity
                         phoneNumber: walletOptions.EcosystemWalletOptions.PhoneNumber,
                         authProvider: walletOptions.EcosystemWalletOptions.AuthProvider,
                         storageDirectoryPath: walletOptions.EcosystemWalletOptions.StorageDirectoryPath,
-                        siweSigner: walletOptions.EcosystemWalletOptions.SiweSigner
+                        siweSigner: walletOptions.EcosystemWalletOptions.SiweSigner,
+                        legacyEncryptionKey: walletOptions.EcosystemWalletOptions.LegacyEncryptionKey
                     );
                     break;
                 case WalletProvider.WalletConnectWallet:
@@ -348,11 +345,11 @@ namespace Thirdweb.Unity
                 }
                 else if (walletOptions.InAppWalletOptions.AuthProvider == AuthProvider.JWT)
                 {
-                    _ = await inAppWallet.LoginWithJWT(walletOptions.InAppWalletOptions.JwtOrPayload, walletOptions.InAppWalletOptions.EncryptionKey);
+                    _ = await inAppWallet.LoginWithJWT(walletOptions.InAppWalletOptions.JwtOrPayload);
                 }
                 else if (walletOptions.InAppWalletOptions.AuthProvider == AuthProvider.AuthEndpoint)
                 {
-                    _ = await inAppWallet.LoginWithAuthEndpoint(walletOptions.InAppWalletOptions.JwtOrPayload, walletOptions.InAppWalletOptions.EncryptionKey);
+                    _ = await inAppWallet.LoginWithAuthEndpoint(walletOptions.InAppWalletOptions.JwtOrPayload);
                 }
                 else if (walletOptions.InAppWalletOptions.AuthProvider == AuthProvider.Guest)
                 {
@@ -471,22 +468,7 @@ namespace Thirdweb.Unity
             return wallet;
         }
 
-        public async Task<List<LinkedAccount>> LinkAccount(InAppWallet mainWallet, InAppWallet walletToLink, string otp = null, BigInteger? chainId = null, string jwtOrPayload = null)
-        {
-            return await mainWallet.LinkAccount(
-                walletToLink: walletToLink,
-                otp: otp,
-                isMobile: Application.isMobilePlatform,
-                browserOpenAction: (url) => Application.OpenURL(url),
-                mobileRedirectScheme: BundleId + "://",
-                browser: new CrossPlatformUnityBrowser(RedirectPageHtmlOverride),
-                chainId: chainId,
-                jwt: jwtOrPayload,
-                payload: jwtOrPayload
-            );
-        }
-
-        public async Task<List<LinkedAccount>> LinkAccount(EcosystemWallet mainWallet, EcosystemWallet walletToLink, string otp = null, BigInteger? chainId = null, string jwtOrPayload = null)
+        public async Task<List<LinkedAccount>> LinkAccount(IThirdwebWallet mainWallet, IThirdwebWallet walletToLink, string otp = null, BigInteger? chainId = null, string jwtOrPayload = null)
         {
             return await mainWallet.LinkAccount(
                 walletToLink: walletToLink,

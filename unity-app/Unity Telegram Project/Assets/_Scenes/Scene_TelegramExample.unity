@@ -285,7 +285,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: edb4d273688f4aa46862721ec18f5198, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  EncryptionKey: 00000000000
   WalletButton: {fileID: 904020259}
   LogText: {fileID: 1958174897}
 --- !u!4 &378081514
@@ -942,11 +941,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1288923049808236541, guid: f1f7a02a8c5efe54c95062bd90592227, type: 3}
       propertyPath: <BundleId>k__BackingField
-      value: 
+      value: com.thirdweb.telegramunitytest
       objectReference: {fileID: 0}
     - target: {fileID: 1288923049808236541, guid: f1f7a02a8c5efe54c95062bd90592227, type: 3}
       propertyPath: <ClientId>k__BackingField
-      value: 
+      value: 5d9ad00e02c94d6f3f9835e6c9c9866c
       objectReference: {fileID: 0}
     - target: {fileID: 2985666425045432145, guid: f1f7a02a8c5efe54c95062bd90592227, type: 3}
       propertyPath: m_Name

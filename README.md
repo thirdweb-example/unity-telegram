@@ -56,11 +56,9 @@ Open the Unity example project, it already has thirdweb's [Unity SDK](https://gi
 
 2. Set the client id you previously created in your `ThirdwebManager`
 
-3. Set the `EncryptionKey` in the scene's `TelegramIAWCustomAuth` to match the `NEXT_PUBLIC_AUTH_PHRASE` previously set in your .env.
+3. Build using your own WebGLTemplate or our provided MinimalFullScreen template. Unity SDK v5 has no strict template requirements.
 
-4. Build using your own WebGLTemplate or our provided MinimalFullScreen template. Unity SDK v5 has no strict template requirements.
-
-5. Copy the Build folder's outputs to this repo's `/next-app/public/unity-webgl`. (It should have Build folder and index.html).
+4. Copy the Build folder's outputs to this repo's `/next-app/public/unity-webgl`. (It should have Build folder and index.html).
 
 That's it, start the bot and you should see Unity load and after a few seconds, your wallet will be connected (default is Smart Wallet on Arbitrum Sepolia).
 
@@ -81,7 +79,6 @@ var connection = new WalletOptions(
     inAppWalletOptions: new InAppWalletOptions(
         authprovider: AuthProvider.AuthEndpoint,
         jwtOrPayload: JsonConvert.SerializeObject(payload),
-        encryptionKey: EncryptionKey
     ),
     smartWalletOptions: new SmartWalletOptions(sponsorGas: true)
 );
